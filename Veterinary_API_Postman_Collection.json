@@ -1,0 +1,943 @@
+{
+	"info": {
+		"_postman_id": "veterinary-api-collection",
+		"name": "🐾 Veterinary Management API",
+		"description": "Complete API collection for testing the Sniff & Lick Veterinary Clinic management system with hierarchical admin routes.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Register Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Dr. John Smith\",\n    \"username\": \"admin\",\n    \"email\": \"admin@vetclinic.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"role\": \"admin\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/register",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					}
+				},
+				{
+					"name": "Register Client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Alice Johnson\",\n    \"username\": \"alice\",\n    \"email\": \"alice@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"role\": \"client\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/register",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					}
+				},
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('ADMIN_TOKEN', response.token);",
+									"    pm.environment.set('ADMIN_USER_ID', response.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"login\": \"admin\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					}
+				},
+				{
+					"name": "Login Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('CLIENT_TOKEN', response.token);",
+									"    pm.environment.set('CLIENT_USER_ID', response.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"login\": \"alice\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👥 Admin - Client Management",
+			"item": [
+				{
+					"name": "Get All Clients",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.clients && response.clients.length > 0) {",
+									"        pm.environment.set('CLIENT_ID', response.clients[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Specific Client",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🐕 Admin - Pet Management",
+			"item": [
+				{
+					"name": "Get Client's Pets",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.pets && response.pets.length > 0) {",
+									"        pm.environment.set('PET_ID', response.pets[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Pet for Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('PET_ID', response.pet.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"client_id\": \"{{CLIENT_ID}}\",\n    \"name\": \"Buddy\",\n    \"age\": 3,\n    \"species\": \"canine\",\n    \"breed\": \"Golden Retriever\",\n    \"colormark\": \"Golden with white chest patch\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Specific Pet",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏥 Admin - Consultation Management",
+			"item": [
+				{
+					"name": "Get Pet's Consultations",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.consultations && response.consultations.length > 0) {",
+									"        pm.environment.set('CONSULTATION_ID', response.consultations[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Consultation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('CONSULTATION_ID', response.consultation.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pet_id\": \"{{PET_ID}}\",\n    \"consultation_date\": \"2025-11-05T10:00:00\",\n    \"weight\": 25.5,\n    \"temperature\": 38.2,\n    \"complaint\": \"Pet is limping on front left paw\",\n    \"diagnosis\": \"Suspected muscle strain - recommend rest and anti-inflammatory medication\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Specific Consultation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Latest Records",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}/latest",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}",
+								"latest"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🧪 Admin - Lab Test Management",
+			"item": [
+				{
+					"name": "Get Consultation Lab Tests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.labtests && response.labtests.length > 0) {",
+									"        pm.environment.set('LABTEST_ID', response.labtests[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}/labtests",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}",
+								"labtests"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Lab Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('LABTEST_ID', response.labtest.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"consultation_id\": \"{{CONSULTATION_ID}}\",\n    \"lab_types\": \"cbc\",\n    \"photo_result\": [\"blood_test_result_1.jpg\", \"blood_test_result_2.jpg\"],\n    \"notes\": \"Complete blood count shows elevated white blood cell count - possible infection\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}/labtests",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}",
+								"labtests"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create X-Ray Test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"consultation_id\": \"{{CONSULTATION_ID}}\",\n    \"lab_types\": \"xray\",\n    \"photo_result\": [\"xray_front_paw.jpg\"],\n    \"notes\": \"X-ray of front left paw - no fractures visible, soft tissue swelling present\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}/labtests",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}",
+								"labtests"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💊 Admin - Treatment Management",
+			"item": [
+				{
+					"name": "Get Consultation Treatments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.treatments && response.treatments.length > 0) {",
+									"        pm.environment.set('TREATMENT_ID', response.treatments[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}/treatments",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}",
+								"treatments"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Medicine Treatment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('TREATMENT_ID', response.treatment.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"consultation_id\": \"{{CONSULTATION_ID}}\",\n    \"treatment_type\": \"medicine\",\n    \"meds_name\": \"Rimadyl 100mg\",\n    \"treatment_details\": \"Anti-inflammatory medication - 1 tablet twice daily for 7 days with food. Monitor for appetite changes or vomiting.\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}/treatments",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}",
+								"treatments"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Confinement Treatment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"consultation_id\": \"{{CONSULTATION_ID}}\",\n    \"treatment_type\": \"confinement\",\n    \"treatment_details\": \"Restrict activity for 7-10 days. No running, jumping, or stairs. Leash walks only for bathroom breaks.\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}/treatments",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}",
+								"treatments"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📋 Admin - Prescription Management",
+			"item": [
+				{
+					"name": "Get Consultation Prescriptions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.prescriptions && response.prescriptions.length > 0) {",
+									"        pm.environment.set('PRESCRIPTION_ID', response.prescriptions[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}/prescriptions",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}",
+								"prescriptions"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Prescription",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('PRESCRIPTION_ID', response.prescription.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"consultation_id\": \"{{CONSULTATION_ID}}\",\n    \"upload_photo\": [\"prescription_rimadyl.jpg\"],\n    \"description\": \"Rimadyl 100mg tablets - Dispense 14 tablets. Give 1 tablet by mouth twice daily with food for 7 days. Return for recheck if no improvement or if condition worsens.\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/clients/{{CLIENT_ID}}/pets/{{PET_ID}}/consultations/{{CONSULTATION_ID}}/prescriptions",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"clients",
+								"{{CLIENT_ID}}",
+								"pets",
+								"{{PET_ID}}",
+								"consultations",
+								"{{CONSULTATION_ID}}",
+								"prescriptions"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔧 Utility & Testing",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/health",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						}
+					}
+				},
+				{
+					"name": "Admin Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ADMIN_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/admin/dashboard",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"dashboard"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "http://127.0.0.1:8000",
+			"type": "string"
+		}
+	]
+}

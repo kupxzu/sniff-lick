@@ -295,4 +295,40 @@ class PetController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get pets for a specific client (Admin hierarchical route)
+     * Route: GET /api/admin/clients/{client}/pets
+     */
+    public function clientPets(Request $request, string $clientId): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            
+            // Only admin can access this route
+            if (!$user->isAdmin()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Admin access required'
+                ], 403);
+            }
+
+            $pets = Pet::where('client_id', $clientId)
+                       ->with(['client:id,name,username,email', 'consultations'])
+                       ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Client pets retrieved successfully',
+                'pets' => $pets
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve client pets',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
