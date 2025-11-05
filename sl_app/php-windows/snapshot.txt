@@ -1,0 +1,135 @@
+This snapshot was automatically generated on
+Tue, 16 Jan 2024 10:58:30 +0000
+
+Version: 8.3.1
+Branch: HEAD
+Build: H:\php-sdk8\php-sdk-binary-tools-master\phpmaster\vs16\x64\php-8.3.1-src\x64\Release_TS
+
+Built-in Extensions
+===========================
+Core
+bcmath
+calendar
+ctype
+date
+filter
+hash
+iconv
+json
+SPL
+pcre
+readline
+Reflection
+session
+standard
+mysqlnd
+tokenizer
+zip
+zlib
+libxml
+dom
+PDO
+openssl
+SimpleXML
+xml
+xmlreader
+xmlwriter
+curl
+ftp
+sqlite3
+Phar
+mbstring
+mysqli
+
+
+Dependency information:
+Module: php_ftp.dll
+===========================
+	libcrypto-3-x64.dll
+	libssl-3-x64.dll
+
+Module: libssl-3-x64.dll
+===========================
+	libcrypto-3-x64.dll
+
+Module: php_imagick.dll
+===========================
+	core_rl_magickwand_.dll
+	core_rl_magickcore_.dll
+
+Module: core_rl_magickwand_.dll
+===========================
+	core_rl_magickcore_.dll
+	vcomp140.dll
+
+Module: core_rl_magickcore_.dll
+===========================
+	core_rl_bzlib_.dll
+	core_rl_freetype_.dll
+	core_rl_lcms_.dll
+	core_rl_libxml_.dll
+	core_rl_lqr_.dll
+	core_rl_zlib_.dll
+	vcomp140.dll
+
+Module: core_rl_libxml_.dll
+===========================
+	core_rl_zlib_.dll
+
+Module: core_rl_lqr_.dll
+===========================
+	core_rl_glib_.dll
+
+Module: core_rl_glib_.dll
+===========================
+	core_rl_zlib_.dll
+
+Module: php_intl.dll
+===========================
+	icuuc72.dll
+	icuin72.dll
+	icuio72.dll
+	vcruntime140_1.dll
+
+Module: icuuc72.dll
+===========================
+	icudt72.dll
+	vcruntime140_1.dll
+
+Module: icuin72.dll
+===========================
+	icuuc72.dll
+	vcruntime140_1.dll
+
+Module: icuio72.dll
+===========================
+	icuuc72.dll
+	icuin72.dll
+	vcruntime140_1.dll
+
+Module: php_openssl.dll
+===========================
+	libcrypto-3-x64.dll
+	libssl-3-x64.dll
+
+Module: php_pgsql.dll
+===========================
+	libpq.dll
+
+Module: libpq.dll
+===========================
+	libssl-1_1-x64.dll
+	libcrypto-1_1-x64.dll
+
+Module: libssl-1_1-x64.dll
+===========================
+	libcrypto-1_1-x64.dll
+
+Module: php_sodium.dll
+===========================
+	libsodium.dll
+
+Module: php_sqlite3.dll
+===========================
+	libsqlite3.dll
+

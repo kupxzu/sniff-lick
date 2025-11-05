@@ -48,10 +48,10 @@ class PetController extends Controller
 
     /**
      * Store a newly created pet in storage.
-     * Admin: can create pets for any client by specifying client_id
+     * Admin: can create pets for any client by specifying client in route
      * Client: can create pets only for themselves
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, $client = null): JsonResponse
     {
         try {
             $user = $request->user();
@@ -64,11 +64,6 @@ class PetController extends Controller
                 'colormark' => 'required|string|max:255',
             ];
 
-            // Admin can specify client_id, client cannot
-            if ($user->isAdmin()) {
-                $validationRules['client_id'] = 'required|exists:users,id';
-            }
-
             $validator = Validator::make($request->all(), $validationRules);
 
             if ($validator->fails()) {
@@ -79,8 +74,16 @@ class PetController extends Controller
                 ], 422);
             }
 
-            // Determine client_id
-            $clientId = $user->isAdmin() ? $request->client_id : $user->id;
+            // Determine client_id based on route or user
+            if ($client) {
+                // Admin using hierarchical route
+                $clientId = $client;
+            } else {
+                // Client creating for themselves or legacy route
+                $clientId = $user->isAdmin() && $request->has('client_id') 
+                    ? $request->client_id 
+                    : $user->id;
+            }
 
             $pet = Pet::create([
                 'client_id' => $clientId,

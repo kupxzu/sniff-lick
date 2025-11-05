@@ -59,19 +59,26 @@ class ConsultationController extends Controller
      * Admin: can create consultations for any pet
      * Client: can create consultations only for their pets
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, $client = null, $pet = null): JsonResponse
     {
         try {
             $user = $request->user();
             
+            // Determine pet_id from route parameter or request body
+            $petId = $pet ?? $request->pet_id;
+            
             $validationRules = [
-                'pet_id' => 'required|exists:pets,id',
                 'consultation_date' => 'required|date',
                 'weight' => 'nullable|numeric|min:0|max:999.99',
                 'temperature' => 'nullable|numeric|min:0|max:99.99',
                 'complaint' => 'nullable|string',
                 'diagnosis' => 'nullable|string',
             ];
+            
+            // Only require pet_id in request body if not using hierarchical route
+            if (!$pet) {
+                $validationRules['pet_id'] = 'required|exists:pets,id';
+            }
 
             $validator = Validator::make($request->all(), $validationRules);
 
@@ -84,9 +91,9 @@ class ConsultationController extends Controller
             }
 
             // Check if user can create consultation for this pet
-            $pet = Pet::findOrFail($request->pet_id);
+            $petModel = Pet::findOrFail($petId);
             
-            if (!$user->isAdmin() && $pet->client_id !== $user->id) {
+            if (!$user->isAdmin() && $petModel->client_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied. You can only create consultations for your own pets.'
@@ -94,7 +101,7 @@ class ConsultationController extends Controller
             }
 
             $consultation = Consultation::create([
-                'pet_id' => $request->pet_id,
+                'pet_id' => $petId,
                 'consultation_date' => $request->consultation_date,
                 'weight' => $request->weight,
                 'temperature' => $request->temperature,
@@ -244,26 +251,40 @@ class ConsultationController extends Controller
 
     /**
      * Remove the specified consultation.
+     * Can be called from both hierarchical route and regular route
      */
-    public function destroy(Request $request, string $id): JsonResponse
+    public function destroy(Request $request, $client = null, $pet = null, $consultation = null): JsonResponse
     {
         try {
             $user = $request->user();
             
-            $consultation = Consultation::findOrFail($id);
+            // Determine consultation ID from route parameter or path parameter
+            $consultationId = $consultation ?? $request->route('id');
+            
+            $consultationModel = Consultation::findOrFail($consultationId);
 
             // Check access permissions
-            if (!$user->isAdmin() && $consultation->pet->client_id !== $user->id) {
+            if (!$user->isAdmin() && $consultationModel->pet->client_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied'
                 ], 403);
             }
 
-            $petName = $consultation->pet->name;
-            $consultationDate = $consultation->consultation_date->format('Y-m-d H:i');
+            // For hierarchical routes, validate the client-pet-consultation chain
+            if ($client && $pet) {
+                if ($consultationModel->pet_id != $pet || $consultationModel->pet->client_id != $client) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid consultation for the specified client and pet'
+                    ], 400);
+                }
+            }
+
+            $petName = $consultationModel->pet->name;
+            $consultationDate = $consultationModel->consultation_date->format('Y-m-d H:i');
             
-            $consultation->delete();
+            $consultationModel->delete();
 
             return response()->json([
                 'success' => true,

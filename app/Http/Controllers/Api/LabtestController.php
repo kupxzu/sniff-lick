@@ -254,24 +254,40 @@ class LabtestController extends Controller
 
     /**
      * Remove the specified labtest.
+     * Can be called from both hierarchical route and regular route
      */
-    public function destroy(Request $request, string $id): JsonResponse
+    public function destroy(Request $request, $clientId = null, $petId = null, $consultationId = null, $labtest = null): JsonResponse
     {
         try {
             $user = $request->user();
             
-            $labtest = Labtest::findOrFail($id);
+            // Determine labtest ID from route parameter or path parameter
+            $labtestId = $labtest ?? $request->route('id');
+            
+            $labtestModel = Labtest::findOrFail($labtestId);
 
             // Check access permissions
-            if (!$user->isAdmin() && $labtest->consultation->pet->client_id !== $user->id) {
+            if (!$user->isAdmin() && $labtestModel->consultation->pet->client_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied'
                 ], 403);
             }
 
-            $labType = $labtest->lab_types;
-            $labtest->delete();
+            // For hierarchical routes, validate the client-pet-consultation-labtest chain
+            if ($clientId && $petId && $consultationId) {
+                if ($labtestModel->consultation_id != $consultationId ||
+                    $labtestModel->consultation->pet_id != $petId ||
+                    $labtestModel->consultation->pet->client_id != $clientId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid lab test for the specified client, pet, and consultation'
+                    ], 400);
+                }
+            }
+
+            $labType = $labtestModel->lab_types;
+            $labtestModel->delete();
 
             return response()->json([
                 'success' => true,

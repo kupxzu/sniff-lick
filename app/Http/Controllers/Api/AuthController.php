@@ -22,13 +22,26 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-                'username' => 'required|string|max:255|unique:users',
-                'email' => 'required|string|email|max:255|unique:users',
-                'password' => 'required|string|min:8|confirmed',
-                'role' => 'sometimes|in:client,admin',
-            ]);
+            $role = $request->input('role', 'client');
+            
+            // Different validation rules based on role
+            if ($role === 'client') {
+                // Clients only need name and email
+                $validator = Validator::make($request->all(), [
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|string|email|max:255|unique:users',
+                    'role' => 'sometimes|in:client,admin',
+                ]);
+            } else {
+                // Admins need full registration
+                $validator = Validator::make($request->all(), [
+                    'name' => 'required|string|max:255',
+                    'username' => 'required|string|max:255|unique:users',
+                    'email' => 'required|string|email|max:255|unique:users',
+                    'password' => 'required|string|min:8|confirmed',
+                    'role' => 'sometimes|in:client,admin',
+                ]);
+            }
 
             if ($validator->fails()) {
                 return response()->json([
@@ -38,13 +51,24 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            $user = User::create([
+            // Prepare user data
+            $userData = [
                 'name' => $request->name,
-                'username' => $request->username,
                 'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => $request->input('role', 'client'), // Default to 'client'
-            ]);
+                'role' => $role,
+            ];
+
+            if ($role === 'client') {
+                // For clients, generate username from email and set a default password
+                $userData['username'] = explode('@', $request->email)[0] . '_' . substr(uniqid(), -4);
+                $userData['password'] = Hash::make(uniqid()); // Random password for clients
+            } else {
+                // For admins, use provided credentials
+                $userData['username'] = $request->username;
+                $userData['password'] = Hash::make($request->password);
+            }
+
+            $user = User::create($userData);
 
             $token = $user->createToken('auth_token')->plainTextToken;
 
