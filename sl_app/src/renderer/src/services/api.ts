@@ -1,20 +1,30 @@
 import axios from 'axios'
 
 // Detect environment and set API URL
-const getBaseURL = () => {
-  // Check if running in packaged Electron app
-  const isPackaged = window.api?.isPackaged || false
-  
-  if (isPackaged) {
-    console.log('🚀 PRODUCTION MODE: Using embedded Laravel server at http://127.0.0.1:8000/api')
-    return 'http://127.0.0.1:8000/api'
-  } else {
-    console.log('🔧 DEVELOPMENT MODE: Using external server at http://snifflick.api/api')
-    return 'http://snifflick.api/api'
+let baseURL = 'http://snifflick.api/api' // Default to development
+
+// Initialize API URL based on packaged state
+const initializeAPI = async () => {
+  try {
+    const isPackaged = await window.api.getIsPackaged()
+    
+    if (isPackaged) {
+      console.log('🚀 PRODUCTION MODE: Using embedded Laravel server at http://127.0.0.1:8000/api')
+      baseURL = 'http://127.0.0.1:8000/api'
+    } else {
+      console.log('🔧 DEVELOPMENT MODE: Using external server at http://snifflick.api/api')
+      baseURL = 'http://snifflick.api/api'
+    }
+    
+    // Update axios instance baseURL
+    api.defaults.baseURL = baseURL
+  } catch (error) {
+    console.error('Failed to initialize API:', error)
   }
 }
 
-const baseURL = getBaseURL()
+// Call initialization
+initializeAPI()
 
 const api = axios.create({
   baseURL: baseURL,

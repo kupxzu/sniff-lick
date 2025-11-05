@@ -122,6 +122,21 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
+  // Enable DevTools with F12 or Ctrl+Shift+I in production
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12' || 
+        (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+      mainWindow.webContents.toggleDevTools()
+      event.preventDefault()
+    }
+  })
+
+  // Also open DevTools automatically in production for debugging
+  if (!is.dev) {
+    console.log('🔧 Opening DevTools for production debugging')
+    mainWindow.webContents.openDevTools()
+  }
+
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
