@@ -24,7 +24,7 @@ class ClientController extends Controller
             }
 
             $clients = User::where('role', 'client')
-                ->select('id', 'name', 'username', 'email', 'created_at')
+                ->select('id', 'name', 'username', 'email', 'phone', 'address', 'created_at')
                 ->withCount('pets')
                 ->get();
 
@@ -99,7 +99,7 @@ class ClientController extends Controller
             }
 
             $clients = User::where('role', 'client')
-                ->select('id', 'name', 'username', 'email', 'created_at')
+                ->select('id', 'name', 'username', 'email', 'phone', 'address', 'created_at')
                 ->with(['pets' => function ($query) {
                     $query->select('id', 'client_id', 'name', 'age', 'species', 'breed', 'colormark', 'created_at');
                 }])
@@ -155,6 +155,8 @@ class ClientController extends Controller
                     'name' => $client->name,
                     'username' => $client->username,
                     'email' => $client->email,
+                    'phone' => $client->phone,
+                    'address' => $client->address,
                 ],
                 'pets' => $pets
             ], 200);
@@ -187,6 +189,10 @@ class ClientController extends Controller
             $totalPets = \App\Models\Pet::count();
             $canines = \App\Models\Pet::where('species', 'canine')->count();
             $felines = \App\Models\Pet::where('species', 'feline')->count();
+            $totalConsultations = \App\Models\Consultation::count();
+            $totalPrescriptions = \App\Models\Prescription::count();
+            $totalVaccinations = \App\Models\Vaccination::count();
+            $totalAppointments = \App\Models\Appointment::count();
 
             // Recent clients (last 30 days)
             $recentClients = User::where('role', 'client')
@@ -200,18 +206,18 @@ class ClientController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Dashboard data retrieved successfully',
-                'dashboard' => [
-                    'users' => [
-                        'total_clients' => $totalClients,
-                        'total_admins' => $totalAdmins,
-                        'recent_clients' => $recentClients,
-                    ],
-                    'pets' => [
-                        'total_pets' => $totalPets,
-                        'canines' => $canines,
-                        'felines' => $felines,
-                        'recent_pets' => $recentPets,
-                    ]
+                'data' => [
+                    'totalClients' => $totalClients,
+                    'totalPets' => $totalPets,
+                    'totalConsultations' => $totalConsultations,
+                    'totalPrescriptions' => $totalPrescriptions,
+                    'totalVaccinations' => $totalVaccinations,
+                    'totalAppointments' => $totalAppointments,
+                    'canines' => $canines,
+                    'felines' => $felines,
+                    'recentClients' => $recentClients,
+                    'recentPets' => $recentPets,
+                    'totalAdmins' => $totalAdmins,
                 ]
             ], 200);
 
@@ -240,8 +246,10 @@ class ClientController extends Controller
 
             $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                'email' => 'nullable|email|max:255|unique:users',
+                'email' => 'nullable|string|email|max:255|unique:users',
                 'username' => 'nullable|string|max:255|unique:users',
+                'phone' => 'nullable|string|max:255',
+                'address' => 'nullable|string|max:1000',
             ]);
 
             if ($validator->fails()) {
@@ -253,8 +261,10 @@ class ClientController extends Controller
             }
 
             $name = $request->input('name');
-            $email = $request->input('email');
-            $username = $request->input('username');
+            $email = $request->input('email') ?: null;
+            $username = $request->input('username') ?: null;
+            $phone = $request->input('phone') ?: null;
+            $address = $request->input('address') ?: null;
 
             // Generate a username if not provided
             if (empty($username) && !empty($email)) {
@@ -272,6 +282,8 @@ class ClientController extends Controller
                 'username' => $username,
                 'password' => \Illuminate\Support\Facades\Hash::make($randomPassword),
                 'role' => 'client',
+                'phone' => $phone,
+                'address' => $address,
             ]);
 
             return response()->json([
@@ -328,6 +340,8 @@ class ClientController extends Controller
                 'name' => 'sometimes|string|max:255',
                 'email' => 'sometimes|email|max:255|unique:users,email,' . $id,
                 'username' => 'sometimes|string|max:255|unique:users,username,' . $id,
+                'phone' => 'sometimes|nullable|string|max:255',
+                'address' => 'sometimes|nullable|string|max:1000',
             ]);
 
             if ($validator->fails()) {
@@ -343,10 +357,16 @@ class ClientController extends Controller
                 $updateData['name'] = $request->input('name');
             }
             if ($request->has('email')) {
-                $updateData['email'] = $request->input('email');
+                $updateData['email'] = $request->input('email') ?: null;
             }
             if ($request->has('username')) {
-                $updateData['username'] = $request->input('username');
+                $updateData['username'] = $request->input('username') ?: null;
+            }
+            if ($request->has('phone')) {
+                $updateData['phone'] = $request->input('phone') ?: null;
+            }
+            if ($request->has('address')) {
+                $updateData['address'] = $request->input('address') ?: null;
             }
 
             $client->update($updateData);
