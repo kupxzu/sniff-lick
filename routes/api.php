@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\ConsultationController;
 use App\Http\Controllers\Api\DewormingController;
 use App\Http\Controllers\Api\LabtestController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PetController;
 use App\Http\Controllers\Api\PrescriptionController;
 use App\Http\Controllers\Api\TreatmentController;
@@ -145,6 +146,10 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::post('appointments', [AppointmentController::class, 'store'])->name('admin.appointments.create');
     Route::put('appointments/{appointment}', [AppointmentController::class, 'update'])->name('admin.appointments.update');
     Route::delete('appointments/{appointment}', [AppointmentController::class, 'destroy'])->name('admin.appointments.delete');
+    
+    // Notifications
+    Route::get('notifications/clients-today', [NotificationController::class, 'getClientsWithAppointmentsToday'])->name('admin.notifications.clients-today');
+    Route::post('notifications/send-reminders', [NotificationController::class, 'sendAppointmentReminders'])->name('admin.notifications.send-reminders');
 });
 
 // Legacy route for compatibility

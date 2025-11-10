@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
+            $table->foreignId('client_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('pet_id')->constrained('pets')->onDelete('cascade');
             $table->dateTime('appointment_date');
             $table->enum('types', ['consultation', 'vaccine', 'deworming']);
