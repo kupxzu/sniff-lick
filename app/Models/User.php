@@ -71,6 +71,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the appointments for the user.
+     */
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'client_id');
+    }
+
+    /**
      * Check if user is an admin
      */
     public function isAdmin(): bool

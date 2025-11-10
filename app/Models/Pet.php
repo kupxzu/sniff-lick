@@ -65,4 +65,20 @@ class Pet extends Model
     {
         return $this->hasMany(Vaccination::class);
     }
+
+    /**
+     * Get the dewormings for this pet.
+     */
+    public function dewormings(): HasMany
+    {
+        return $this->hasMany(Deworming::class);
+    }
+
+    /**
+     * Get the appointments for this pet.
+     */
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
+    }
 }

@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\ConsultationController;
+use App\Http\Controllers\Api\DewormingController;
 use App\Http\Controllers\Api\LabtestController;
 use App\Http\Controllers\Api\PetController;
 use App\Http\Controllers\Api\PrescriptionController;
@@ -130,6 +132,19 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('clients/{client}/pets/{pet}/vaccinations/{vaccination}', [VaccinationController::class, 'show'])->name('admin.client.pet.vaccination.show');
     Route::put('clients/{client}/pets/{pet}/vaccinations/{vaccination}', [VaccinationController::class, 'update'])->name('admin.client.pet.vaccination.update');
     Route::delete('clients/{client}/pets/{pet}/vaccinations/{vaccination}', [VaccinationController::class, 'destroy'])->name('admin.client.pet.vaccination.delete');
+    
+    // Client -> Pet -> Dewormings
+    Route::get('clients/{client}/pets/{pet}/dewormings', [DewormingController::class, 'index'])->name('admin.client.pet.dewormings');
+    Route::post('clients/{client}/pets/{pet}/dewormings', [DewormingController::class, 'store'])->name('admin.client.pet.dewormings.create');
+    Route::get('clients/{client}/pets/{pet}/dewormings/{deworming}', [DewormingController::class, 'show'])->name('admin.client.pet.deworming.show');
+    Route::put('clients/{client}/pets/{pet}/dewormings/{deworming}', [DewormingController::class, 'update'])->name('admin.client.pet.deworming.update');
+    Route::delete('clients/{client}/pets/{pet}/dewormings/{deworming}', [DewormingController::class, 'destroy'])->name('admin.client.pet.deworming.delete');
+    
+    // Appointments (Global)
+    Route::get('appointments', [AppointmentController::class, 'index'])->name('admin.appointments'); // Supports ?filter=all|today|week|month
+    Route::post('appointments', [AppointmentController::class, 'store'])->name('admin.appointments.create');
+    Route::put('appointments/{appointment}', [AppointmentController::class, 'update'])->name('admin.appointments.update');
+    Route::delete('appointments/{appointment}', [AppointmentController::class, 'destroy'])->name('admin.appointments.delete');
 });
 
 // Legacy route for compatibility
