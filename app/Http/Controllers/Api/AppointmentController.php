@@ -25,7 +25,9 @@ class AppointmentController extends Controller
 
         switch ($filter) {
             case 'today':
-                $query->whereDate('appointment_date', Carbon::today());
+                // Use Manila timezone for "today"
+                $todayManila = Carbon::now('Asia/Manila')->startOfDay();
+                $query->whereDate('appointment_date', $todayManila);
                 break;
             case 'week':
                 $query->whereBetween('appointment_date', [
@@ -86,7 +88,13 @@ class AppointmentController extends Controller
             ], 404);
         }
 
-        $appointment = Appointment::create($request->all());
+        // Convert appointment_date from Manila timezone to UTC for storage
+        $appointmentData = $request->all();
+        if (isset($appointmentData['appointment_date'])) {
+            $appointmentData['appointment_date'] = Carbon::parse($appointmentData['appointment_date'], 'Asia/Manila')->setTimezone('UTC');
+        }
+
+        $appointment = Appointment::create($appointmentData);
         $appointment->load(['client', 'pet']);
 
         return response()->json([
@@ -146,7 +154,13 @@ class AppointmentController extends Controller
             }
         }
 
-        $appointment->update($request->all());
+        // Convert appointment_date from Manila timezone to UTC for storage
+        $updateData = $request->all();
+        if (isset($updateData['appointment_date'])) {
+            $updateData['appointment_date'] = Carbon::parse($updateData['appointment_date'], 'Asia/Manila')->setTimezone('UTC');
+        }
+
+        $appointment->update($updateData);
         $appointment->load(['client', 'pet']);
 
         return response()->json([
