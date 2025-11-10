@@ -72,12 +72,10 @@ class LabtestController extends Controller
             $user = $request->user();
             
             // Determine consultation_id from route parameter or request body
-            $finalConsultationId = $consultationId ?? $request->consultation_id;
+            $finalConsultationId = $consultationId ?? $request->input('consultation_id');
             
             $validationRules = [
                 'lab_types' => 'required|in:cbc,microscopy,bloodchem,ultrasound,xray',
-                'photo_result' => 'nullable|array',
-                'photo_result.*' => 'string', // Photo file paths
                 'notes' => 'nullable|string',
             ];
 
@@ -118,9 +116,9 @@ class LabtestController extends Controller
 
             $labtest = Labtest::create([
                 'consultation_id' => $finalConsultationId,
-                'lab_types' => $request->lab_types,
-                'photo_result' => $request->photo_result,
-                'notes' => $request->notes,
+                'lab_types' => $request->input('lab_types'),
+                'photo_result' => null,
+                'notes' => $request->input('notes'),
             ]);
 
             // Load consultation relationship
@@ -188,25 +186,38 @@ class LabtestController extends Controller
     /**
      * Update the specified labtest.
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(Request $request, $clientId = null, $petId = null, $consultationId = null, $labtest = null): JsonResponse
     {
         try {
             $user = $request->user();
             
-            $labtest = Labtest::findOrFail($id);
+            // Determine labtest ID from route parameter
+            $labtestId = $labtest ?? $request->route('id');
+            
+            $labtestModel = Labtest::findOrFail($labtestId);
 
             // Check access permissions
-            if (!$user->isAdmin() && $labtest->consultation->pet->client_id !== $user->id) {
+            if (!$user->isAdmin() && $labtestModel->consultation->pet->client_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied'
                 ], 403);
             }
 
+            // For hierarchical routes, validate the client-pet-consultation chain
+            if ($clientId && $petId && $consultationId) {
+                if ($labtestModel->consultation_id != $consultationId ||
+                    $labtestModel->consultation->pet_id != $petId ||
+                    $labtestModel->consultation->pet->client_id != $clientId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid lab test for the specified client, pet, and consultation'
+                    ], 400);
+                }
+            }
+
             $validator = Validator::make($request->all(), [
                 'lab_types' => 'sometimes|in:cbc,microscopy,bloodchem,ultrasound,xray',
-                'photo_result' => 'sometimes|nullable|array',
-                'photo_result.*' => 'string',
                 'notes' => 'sometimes|nullable|string',
             ]);
 
@@ -218,18 +229,22 @@ class LabtestController extends Controller
                 ], 422);
             }
 
-            $labtest->update($request->only([
-                'lab_types',
-                'photo_result',
-                'notes'
-            ]));
+            $updateData = [];
+            if ($request->has('lab_types')) {
+                $updateData['lab_types'] = $request->input('lab_types');
+            }
+            if ($request->has('notes')) {
+                $updateData['notes'] = $request->input('notes');
+            }
 
-            $labtest->load('consultation.pet.client:id,name,username,email');
+            $labtestModel->update($updateData);
+
+            $labtestModel->load('consultation.pet.client:id,name,username,email');
 
             return response()->json([
                 'success' => true,
                 'message' => 'Lab test updated successfully',
-                'labtest' => $labtest
+                'labtest' => $labtestModel
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {

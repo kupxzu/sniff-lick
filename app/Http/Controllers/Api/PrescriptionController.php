@@ -76,7 +76,7 @@ class PrescriptionController extends Controller
             
             $validationRules = [
                 'upload_photo' => 'nullable|array',
-                'upload_photo.*' => 'string', // Photo file paths
+                'upload_photo.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif|max:10240', // 10MB max per file
                 'description' => 'nullable|string',
             ];
 
@@ -89,7 +89,7 @@ class PrescriptionController extends Controller
 
             // At least one of photo or description must be provided
             $validator->after(function ($validator) use ($request) {
-                if (!$request->upload_photo && !$request->description) {
+                if (!$request->hasFile('upload_photo') && !$request->description) {
                     $validator->errors()->add('prescription', 'Either upload_photo or description must be provided.');
                 }
             });
@@ -122,9 +122,18 @@ class PrescriptionController extends Controller
                 }
             }
 
+            // Handle file uploads
+            $photoPaths = [];
+            if ($request->hasFile('upload_photo')) {
+                foreach ($request->file('upload_photo') as $file) {
+                    $path = $file->store('prescriptions', 'public');
+                    $photoPaths[] = $path;
+                }
+            }
+
             $prescription = Prescription::create([
                 'consultation_id' => $finalConsultationId,
-                'upload_photo' => $request->upload_photo,
+                'upload_photo' => $photoPaths,
                 'description' => $request->description,
             ]);
 
@@ -192,24 +201,41 @@ class PrescriptionController extends Controller
 
     /**
      * Update the specified prescription.
+     * Supports both hierarchical route (client/pet/consultation/prescription) and direct route
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(Request $request, $clientId = null, $petId = null, $consultationId = null, $prescription = null): JsonResponse
     {
         try {
             $user = $request->user();
             
-            $prescription = Prescription::findOrFail($id);
+            // Determine prescription ID from route parameter
+            $prescriptionId = $prescription ?? $request->route('id');
+            
+            $prescriptionModel = Prescription::findOrFail($prescriptionId);
 
             // Check access permissions
-            if (!$user->isAdmin() && $prescription->consultation->pet->client_id !== $user->id) {
+            if (!$user->isAdmin() && $prescriptionModel->consultation->pet->client_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied'
                 ], 403);
             }
 
+            // For hierarchical routes, validate the client-pet-consultation chain
+            if ($clientId && $petId && $consultationId) {
+                if ($prescriptionModel->consultation_id != $consultationId || 
+                    $prescriptionModel->consultation->pet_id != $petId || 
+                    $prescriptionModel->consultation->pet->client_id != $clientId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid prescription for the specified client, pet, and consultation'
+                    ], 400);
+                }
+            }
+
             $validator = Validator::make($request->all(), [
-                'upload_photo' => 'sometimes|nullable|string|max:255',
+                'upload_photo' => 'sometimes|nullable|array',
+                'upload_photo.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif|max:10240', // 10MB max per file
                 'description' => 'sometimes|nullable|string',
             ]);
 
@@ -221,17 +247,31 @@ class PrescriptionController extends Controller
                 ], 422);
             }
 
-            $prescription->update($request->only([
-                'upload_photo',
-                'description'
-            ]));
+            $updateData = [];
+            
+            // Handle new file uploads
+            if ($request->hasFile('upload_photo')) {
+                $photoPaths = [];
+                foreach ($request->file('upload_photo') as $file) {
+                    $path = $file->store('prescriptions', 'public');
+                    $photoPaths[] = $path;
+                }
+                $updateData['upload_photo'] = $photoPaths;
+            }
+            
+            // Update description if provided
+            if ($request->has('description')) {
+                $updateData['description'] = $request->description;
+            }
 
-            $prescription->load('consultation.pet.client:id,name,username,email');
+            $prescriptionModel->update($updateData);
+
+            $prescriptionModel->load('consultation.pet.client:id,name,username,email');
 
             return response()->json([
                 'success' => true,
                 'message' => 'Prescription updated successfully',
-                'prescription' => $prescription
+                'prescription' => $prescriptionModel
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -256,23 +296,39 @@ class PrescriptionController extends Controller
 
     /**
      * Remove the specified prescription.
+     * Supports both hierarchical route (client/pet/consultation/prescription) and direct route
      */
-    public function destroy(Request $request, string $id): JsonResponse
+    public function destroy(Request $request, $clientId = null, $petId = null, $consultationId = null, $prescription = null): JsonResponse
     {
         try {
             $user = $request->user();
             
-            $prescription = Prescription::findOrFail($id);
+            // Determine prescription ID from route parameter
+            $prescriptionId = $prescription ?? $request->route('id');
+            
+            $prescriptionModel = Prescription::findOrFail($prescriptionId);
 
             // Check access permissions
-            if (!$user->isAdmin() && $prescription->consultation->pet->client_id !== $user->id) {
+            if (!$user->isAdmin() && $prescriptionModel->consultation->pet->client_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied'
                 ], 403);
             }
 
-            $prescription->delete();
+            // For hierarchical routes, validate the client-pet-consultation chain
+            if ($clientId && $petId && $consultationId) {
+                if ($prescriptionModel->consultation_id != $consultationId || 
+                    $prescriptionModel->consultation->pet_id != $petId || 
+                    $prescriptionModel->consultation->pet->client_id != $clientId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid prescription for the specified client, pet, and consultation'
+                    ], 400);
+                }
+            }
+
+            $prescriptionModel->delete();
 
             return response()->json([
                 'success' => true,

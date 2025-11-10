@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -105,7 +106,7 @@ class AuthController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'login' => 'required|string', // Can be username or email
-                'password' => 'required|string',
+                'password' => 'sometimes|string', // Optional for clients
             ]);
 
             if ($validator->fails()) {
@@ -118,12 +119,40 @@ class AuthController extends Controller
 
             $user = User::findForLogin($request->login);
 
-            if (!$user || !Hash::check($request->password, $user->password)) {
+            // Debug logging
+            Log::info('Login attempt', [
+                'login' => $request->login,
+                'user_found' => $user ? 'yes' : 'no',
+                'user_id' => $user ? $user->id : null,
+                'user_role' => $user ? $user->role : null,
+                'password_provided' => $request->has('password'),
+                'password_check' => $user ? Hash::check($request->password ?? '', $user->password) : 'no_user'
+            ]);
+
+            if (!$user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid credentials'
                 ], 401);
             }
+
+            // Admin login requires password
+            if ($user->role === 'admin') {
+                if (!$request->has('password')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Password required for admin login'
+                    ], 401);
+                }
+
+                if (!Hash::check($request->password, $user->password)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid credentials'
+                    ], 401);
+                }
+            }
+            // Client login doesn't require password
 
             $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -141,6 +170,11 @@ class AuthController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            Log::error('Login exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Login failed',

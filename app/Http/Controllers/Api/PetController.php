@@ -123,23 +123,23 @@ class PetController extends Controller
      * Admin: can view any pet
      * Client: can view only their own pets
      */
-    public function show(Request $request, string $id): JsonResponse
+    public function show(Request $request, string $client, string $pet): JsonResponse
     {
         try {
             $user = $request->user();
             
             if ($user->isAdmin()) {
                 // Admin can see any pet with client info
-                $pet = Pet::with('client:id,name,username,email')->findOrFail($id);
+                $petModel = Pet::with('client:id,name,username,email')->findOrFail($pet);
             } else {
                 // Client can see only their own pets
-                $pet = $user->pets()->findOrFail($id);
+                $petModel = $user->pets()->findOrFail($pet);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Pet retrieved successfully',
-                'pet' => $pet
+                'pet' => $petModel
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -161,16 +161,16 @@ class PetController extends Controller
      * Admin: can update any pet and change client_id
      * Client: can update only their own pets
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(Request $request, string $client, string $pet): JsonResponse
     {
         try {
             $user = $request->user();
             
             // Find pet based on user role
             if ($user->isAdmin()) {
-                $pet = Pet::findOrFail($id);
+                $petModel = Pet::findOrFail($pet);
             } else {
-                $pet = $user->pets()->findOrFail($id);
+                $petModel = $user->pets()->findOrFail($pet);
             }
 
             $validationRules = [
@@ -223,15 +223,15 @@ class PetController extends Controller
                 $updateData['client_id'] = $request->client_id;
             }
 
-            $pet->update($updateData);
+            $petModel->update($updateData);
 
             // Load client relationship for response
-            $pet->load('client:id,name,username,email');
+            $petModel->load('client:id,name,username,email');
 
             return response()->json([
                 'success' => true,
                 'message' => 'Pet updated successfully',
-                'pet' => $pet
+                'pet' => $petModel
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -259,22 +259,22 @@ class PetController extends Controller
      * Admin: can delete any pet
      * Client: can delete only their own pets
      */
-    public function destroy(Request $request, string $id): JsonResponse
+    public function destroy(Request $request, string $client, string $pet): JsonResponse
     {
         try {
             $user = $request->user();
             
             // Find pet based on user role
             if ($user->isAdmin()) {
-                $pet = Pet::findOrFail($id);
+                $petModel = Pet::findOrFail($pet);
             } else {
-                $pet = $user->pets()->findOrFail($id);
+                $petModel = $user->pets()->findOrFail($pet);
             }
             
-            $petName = $pet->name;
-            $clientName = $pet->client->name;
+            $petName = $petModel->name;
+            $clientName = $petModel->client->name;
             
-            $pet->delete();
+            $petModel->delete();
 
             $message = $user->isAdmin() 
                 ? "Pet '{$petName}' (owned by {$clientName}) deleted successfully"
@@ -317,13 +317,13 @@ class PetController extends Controller
             }
 
             $pets = Pet::where('client_id', $clientId)
-                       ->with(['client:id,name,username,email', 'consultations'])
+                       ->with(['client:id,name,username,email'])
                        ->get();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Client pets retrieved successfully',
-                'pets' => $pets
+                'data' => $pets
             ], 200);
 
         } catch (\Exception $e) {

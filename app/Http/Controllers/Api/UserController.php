@@ -280,4 +280,180 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get user's pets with their latest consultation data
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function pets(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            
+            // Load pets with their latest consultations, vaccinations, and related data
+            $pets = \App\Models\Pet::where('client_id', $user->id)
+                ->with([
+                    'consultations' => function ($query) {
+                        $query->latest('consultation_date')->take(5);
+                    },
+                    'consultations.treatments',
+                    'consultations.prescriptions',
+                    'consultations.labtests',
+                    'vaccinations' => function ($query) {
+                        $query->latest('date')->take(5);
+                    },
+                    'vaccinations.vacTreatments'
+                ])
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $pets
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get pets',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get specific pet details
+     *
+     * @param Request $request
+     * @param int $petId
+     * @return JsonResponse
+     */
+    public function pet(Request $request, $petId): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            
+            $pet = \App\Models\Pet::where('client_id', $user->id)
+                ->where('id', $petId)
+                ->with([
+                    'consultations' => function ($query) {
+                        $query->latest('consultation_date');
+                    },
+                    'consultations.treatments',
+                    'consultations.prescriptions',
+                    'consultations.labtests',
+                    'vaccinations' => function ($query) {
+                        $query->latest('date');
+                    },
+                    'vaccinations.vacTreatments'
+                ])
+                ->first();
+
+            if (!$pet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pet not found or does not belong to you'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $pet
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get pet',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get consultations for a specific pet
+     *
+     * @param Request $request
+     * @param int $petId
+     * @return JsonResponse
+     */
+    public function petConsultations(Request $request, $petId): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            
+            // Verify pet belongs to user
+            $pet = \App\Models\Pet::where('client_id', $user->id)
+                ->where('id', $petId)
+                ->first();
+
+            if (!$pet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pet not found or does not belong to you'
+                ], 404);
+            }
+
+            $consultations = \App\Models\Consultation::where('pet_id', $petId)
+                ->with(['treatments', 'prescriptions', 'labtests'])
+                ->latest('consultation_date')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $consultations
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get consultations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get vaccinations for a specific pet
+     *
+     * @param Request $request
+     * @param int $petId
+     * @return JsonResponse
+     */
+    public function petVaccinations(Request $request, $petId): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            
+            // Verify pet belongs to user
+            $pet = \App\Models\Pet::where('client_id', $user->id)
+                ->where('id', $petId)
+                ->first();
+
+            if (!$pet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pet not found or does not belong to you'
+                ], 404);
+            }
+
+            $vaccinations = \App\Models\Vaccination::where('pet_id', $petId)
+                ->with('vacTreatments')
+                ->latest('date')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $vaccinations
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get vaccinations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

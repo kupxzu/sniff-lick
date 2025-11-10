@@ -186,20 +186,36 @@ class TreatmentController extends Controller
 
     /**
      * Update the specified treatment.
+     * Supports both hierarchical route (client/pet/consultation/treatment) and direct route
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(Request $request, $clientId = null, $petId = null, $consultationId = null, $treatment = null): JsonResponse
     {
         try {
             $user = $request->user();
             
-            $treatment = Treatment::findOrFail($id);
+            // Determine treatment ID from route parameter
+            $treatmentId = $treatment ?? $request->route('id');
+            
+            $treatmentModel = Treatment::findOrFail($treatmentId);
 
             // Check access permissions
-            if (!$user->isAdmin() && $treatment->consultation->pet->client_id !== $user->id) {
+            if (!$user->isAdmin() && $treatmentModel->consultation->pet->client_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied'
                 ], 403);
+            }
+
+            // For hierarchical routes, validate the client-pet-consultation chain
+            if ($clientId && $petId && $consultationId) {
+                if ($treatmentModel->consultation_id != $consultationId || 
+                    $treatmentModel->consultation->pet_id != $petId || 
+                    $treatmentModel->consultation->pet->client_id != $clientId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid treatment for the specified client, pet, and consultation'
+                    ], 400);
+                }
             }
 
             $validator = Validator::make($request->all(), [
@@ -216,18 +232,18 @@ class TreatmentController extends Controller
                 ], 422);
             }
 
-            $treatment->update($request->only([
+            $treatmentModel->update($request->only([
                 'treatment_type',
                 'meds_name',
                 'treatment_details'
             ]));
 
-            $treatment->load('consultation.pet.client:id,name,username,email');
+            $treatmentModel->load('consultation.pet.client:id,name,username,email');
 
             return response()->json([
                 'success' => true,
                 'message' => 'Treatment updated successfully',
-                'treatment' => $treatment
+                'treatment' => $treatmentModel
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -252,24 +268,40 @@ class TreatmentController extends Controller
 
     /**
      * Remove the specified treatment.
+     * Supports both hierarchical route (client/pet/consultation/treatment) and direct route
      */
-    public function destroy(Request $request, string $id): JsonResponse
+    public function destroy(Request $request, $clientId = null, $petId = null, $consultationId = null, $treatment = null): JsonResponse
     {
         try {
             $user = $request->user();
             
-            $treatment = Treatment::findOrFail($id);
+            // Determine treatment ID from route parameter
+            $treatmentId = $treatment ?? $request->route('id');
+            
+            $treatmentModel = Treatment::findOrFail($treatmentId);
 
             // Check access permissions
-            if (!$user->isAdmin() && $treatment->consultation->pet->client_id !== $user->id) {
+            if (!$user->isAdmin() && $treatmentModel->consultation->pet->client_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied'
                 ], 403);
             }
 
-            $treatmentType = $treatment->treatment_type;
-            $treatment->delete();
+            // For hierarchical routes, validate the client-pet-consultation chain
+            if ($clientId && $petId && $consultationId) {
+                if ($treatmentModel->consultation_id != $consultationId || 
+                    $treatmentModel->consultation->pet_id != $petId || 
+                    $treatmentModel->consultation->pet->client_id != $clientId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid treatment for the specified client, pet, and consultation'
+                    ], 400);
+                }
+            }
+
+            $treatmentType = $treatmentModel->treatment_type;
+            $treatmentModel->delete();
 
             return response()->json([
                 'success' => true,

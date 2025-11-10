@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Consultation extends Model
+class Vaccination extends Model
 {
     use HasFactory;
 
@@ -18,11 +18,9 @@ class Consultation extends Model
      */
     protected $fillable = [
         'pet_id',
-        'consultation_date',
+        'date',
         'weight',
         'temperature',
-        'complaint',
-        'diagnosis',
     ];
 
     /**
@@ -31,25 +29,10 @@ class Consultation extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'consultation_date' => 'datetime',
+        'date' => 'datetime',
         'weight' => 'decimal:2',
         'temperature' => 'decimal:2',
     ];
-
-    /**
-     * Get the attributes that should be cast.
-     * Override to handle empty strings as null for numeric fields
-     *
-     * @return array
-     */
-    protected function casts(): array
-    {
-        return [
-            'consultation_date' => 'datetime',
-            'weight' => 'decimal:2',
-            'temperature' => 'decimal:2',
-        ];
-    }
 
     /**
      * Set the weight attribute, converting empty strings to null
@@ -74,7 +57,7 @@ class Consultation extends Model
     }
 
     /**
-     * Get the pet that this consultation belongs to.
+     * Get the pet that this vaccination belongs to.
      */
     public function pet(): BelongsTo
     {
@@ -82,26 +65,10 @@ class Consultation extends Model
     }
 
     /**
-     * Get the lab tests for this consultation.
+     * Get the vac treatments for this vaccination.
      */
-    public function labtests(): HasMany
+    public function vacTreatments(): HasMany
     {
-        return $this->hasMany(Labtest::class);
-    }
-
-    /**
-     * Get the treatments for this consultation.
-     */
-    public function treatments(): HasMany
-    {
-        return $this->hasMany(Treatment::class);
-    }
-
-    /**
-     * Get the prescriptions for this consultation.
-     */
-    public function prescriptions(): HasMany
-    {
-        return $this->hasMany(Prescription::class);
+        return $this->hasMany(VacTreatment::class, 'vac_id');
     }
 }

@@ -8,8 +8,27 @@ use App\Http\Controllers\Api\PetController;
 use App\Http\Controllers\Api\PrescriptionController;
 use App\Http\Controllers\Api\TreatmentController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VaccinationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+// Public storage route (no authentication required)
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+    
+    $mimeType = mime_content_type($filePath);
+    
+    return response()->file($filePath, [
+        'Content-Type' => $mimeType,
+        'Access-Control-Allow-Origin' => '*',
+        'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+        'Access-Control-Allow-Headers' => '*',
+    ]);
+})->where('path', '.*');
 
 // Health check route
 Route::get('/health', function () {
@@ -39,6 +58,20 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     Route::put('username', [UserController::class, 'updateUsername'])->name('user.update-username');
     Route::put('email', [UserController::class, 'updateEmail'])->name('user.update-email');
     Route::put('password', [UserController::class, 'updatePassword'])->name('user.update-password');
+    Route::get('pets', [UserController::class, 'pets'])->name('user.pets');
+});
+
+// Client-Centric Hierarchical Routes (Client Access to Own Data)
+Route::middleware('auth:sanctum')->prefix('client')->group(function () {
+    // My Pets
+    Route::get('pets', [UserController::class, 'pets'])->name('client.pets');
+    Route::get('pets/{pet}', [UserController::class, 'pet'])->name('client.pet.show');
+    
+    // My Pet -> Consultations
+    Route::get('pets/{pet}/consultations', [UserController::class, 'petConsultations'])->name('client.pet.consultations');
+    
+    // My Pet -> Vaccinations
+    Route::get('pets/{pet}/vaccinations', [UserController::class, 'petVaccinations'])->name('client.pet.vaccinations');
 });
 
 // Admin-Centric Hierarchical Routes (Admin Only)
@@ -48,7 +81,10 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     
     // Client Management
     Route::get('clients', [ClientController::class, 'index'])->name('admin.clients');
+    Route::post('clients', [ClientController::class, 'store'])->name('admin.clients.create');
     Route::get('clients/{client}', [ClientController::class, 'show'])->name('admin.client.show');
+    Route::put('clients/{client}', [ClientController::class, 'update'])->name('admin.client.update');
+    Route::delete('clients/{client}', [ClientController::class, 'destroy'])->name('admin.client.delete');
     
     // Client -> Pet Management
     Route::get('clients/{client}/pets', [PetController::class, 'clientPets'])->name('admin.client.pets');
@@ -87,6 +123,13 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('clients/{client}/pets/{pet}/consultations/{consultation}/prescriptions/{prescription}', [PrescriptionController::class, 'show'])->name('admin.client.pet.consultation.prescription.show');
     Route::put('clients/{client}/pets/{pet}/consultations/{consultation}/prescriptions/{prescription}', [PrescriptionController::class, 'update'])->name('admin.client.pet.consultation.prescription.update');
     Route::delete('clients/{client}/pets/{pet}/consultations/{consultation}/prescriptions/{prescription}', [PrescriptionController::class, 'destroy'])->name('admin.client.pet.consultation.prescription.delete');
+    
+    // Client -> Pet -> Vaccinations
+    Route::get('clients/{client}/pets/{pet}/vaccinations', [VaccinationController::class, 'index'])->name('admin.client.pet.vaccinations');
+    Route::post('clients/{client}/pets/{pet}/vaccinations', [VaccinationController::class, 'store'])->name('admin.client.pet.vaccinations.create');
+    Route::get('clients/{client}/pets/{pet}/vaccinations/{vaccination}', [VaccinationController::class, 'show'])->name('admin.client.pet.vaccination.show');
+    Route::put('clients/{client}/pets/{pet}/vaccinations/{vaccination}', [VaccinationController::class, 'update'])->name('admin.client.pet.vaccination.update');
+    Route::delete('clients/{client}/pets/{pet}/vaccinations/{vaccination}', [VaccinationController::class, 'destroy'])->name('admin.client.pet.vaccination.delete');
 });
 
 // Legacy route for compatibility

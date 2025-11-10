@@ -178,20 +178,34 @@ class ConsultationController extends Controller
 
     /**
      * Update the specified consultation.
+     * Supports both hierarchical route (client/pet/consultation) and direct route
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(Request $request, $client = null, $pet = null, $consultation = null): JsonResponse
     {
         try {
             $user = $request->user();
             
-            $consultation = Consultation::findOrFail($id);
+            // Determine consultation ID from route parameter or path parameter
+            $consultationId = $consultation ?? $request->route('id');
+            
+            $consultationModel = Consultation::findOrFail($consultationId);
 
             // Check access permissions
-            if (!$user->isAdmin() && $consultation->pet->client_id !== $user->id) {
+            if (!$user->isAdmin() && $consultationModel->pet->client_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied'
                 ], 403);
+            }
+
+            // For hierarchical routes, validate the client-pet-consultation chain
+            if ($client && $pet) {
+                if ($consultationModel->pet_id != $pet || $consultationModel->pet->client_id != $client) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid consultation for the specified client and pet'
+                    ], 400);
+                }
             }
 
             $validationRules = [
@@ -212,7 +226,7 @@ class ConsultationController extends Controller
                 ], 422);
             }
 
-            $consultation->update($request->only([
+            $consultationModel->update($request->only([
                 'consultation_date',
                 'weight',
                 'temperature',
@@ -221,12 +235,12 @@ class ConsultationController extends Controller
             ]));
 
             // Load relationships for response
-            $consultation->load(['pet.client:id,name,username,email', 'labtests', 'treatments', 'prescriptions']);
+            $consultationModel->load(['pet.client:id,name,username,email', 'labtests', 'treatments', 'prescriptions']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Consultation updated successfully',
-                'consultation' => $consultation
+                'consultation' => $consultationModel
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {

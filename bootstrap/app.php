@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Handle CORS globally - must be first
+        $middleware->use([
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+        
         // Sanctum middleware for API authentication
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
@@ -22,11 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Disable CSRF for API routes
         $middleware->validateCsrfTokens(except: [
             'api/*',
-        ]);
-        
-        // Handle CORS globally
-        $middleware->use([
-            \Illuminate\Http\Middleware\HandleCors::class,
+            'storage/*',
         ]);
         
         // Trust all proxies (for development)
